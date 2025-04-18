@@ -11,6 +11,13 @@ mood_mode_map = {
 }
 
 # Do: FIRST FITNESS FUNCTION: check how well notes match with chord
+def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int:
+    fitness = 0
+    for note in melody.notes:
+        if note.pitch in harmony.notes[0].pitches:
+            fitness += 1
+    return fitness / len(melody.notes)
+
 
 # SECOND FITNESS FUNCTION: check how well measure's notes fit in with mode
 def fitness_function(measure, mood, tonic='C'):

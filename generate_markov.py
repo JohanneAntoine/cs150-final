@@ -11,7 +11,12 @@ RHYTHM = 1.0
 MELODY_NOTE_COUNT = MEASURES * NOTES_PER_MEASURE
 CHORD_COUNT = MEASURES
 
-# LOAD MARKOV CHAINS
+"""
+load_markov_chain
+Input: the name of a file
+Description: Converts the file into a dictionary
+Output: A dictionary of dictionaries containing a 2 note Markov chain
+"""
 def load_markov_chain(filename):
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -32,7 +37,13 @@ def load_markov_chain(filename):
 melody_chain = load_markov_chain('melody_markov_output.txt')
 chord_chain = load_markov_chain('chord_markov_output.txt')
 
-# GENERATE SEQUENCES
+
+"""
+weighted_choice
+Input: A dictionary containing a note/chord and a corresponding probability
+Description: Picks a note/chord based on the probability
+Output: A random element from the input's keys
+"""
 def weighted_choice(transitions):
     rand = random.random()
     total = 0
@@ -42,6 +53,12 @@ def weighted_choice(transitions):
             return choice
     return random.choice(list(transitions.keys()))
 
+"""
+generate_sequence
+Input: chain-a dictionary of dictionaries containing a 2 note Markov chain, count- an integer indicating a number of elements
+Description: create a sequence of elements based on the given Markov chain
+Output: A list of elements (notes/chords)
+"""
 def generate_sequence(chain, count):
     state = random.choice(list(chain.keys()))
     sequence = [state[0], state[1]]
@@ -59,7 +76,70 @@ def generate_sequence(chain, count):
 melody_sequence = generate_sequence(melody_chain, MELODY_NOTE_COUNT)
 chord_sequence = generate_sequence(chord_chain, CHORD_COUNT)
 
-# COMPOSITION
+#STOCHASTIC BINARY SUBDIVISION
+class instr:
+    density: float #probability of dividing
+    res: float #shortest note that can be generated
+    pat: stream.Measure # to put the notes in
+
+
+    def __init__(self, density: float, res: float):
+        self.density = density
+        self.res = res
+        self.pat = stream.Measure(id="")
+
+
+
+"""
+divvy
+Input: An instr class
+Description: Given a probability, split a region of beats (for example, 4 beats)
+Output: Void function, but adds a rhythm to a measure
+"""
+def divvy(ip: instr, low, hi):
+    # find midpoint
+    mid = (low + hi) / 2
+    dur = (hi-low)
+    seed = random.random()
+    if (seed < ip.density and (hi-low) > ip.res): #determine if you divide
+        divvy(ip, low, mid)
+        divvy(ip, mid, hi)
+    else:
+        ch = note.Note('C', quarterLength=dur)
+        #ch.articulations.append(articulations.Staccato())
+        ip.pat.insert(low,ch)
+
+sampleStream = stream.Stream()
+
+for i in range(MEASURES):
+    sampleMeasure = instr(0.80, 0.25)
+    divvy(sampleMeasure, 0.0, 4.0)
+    sampleStream.append(sampleMeasure.pat)
+
+sampleStream.show("text")
+
+num_notes = len(sampleStream.flatten().notes)
+
+
+
+test_sequence = generate_sequence(melody_chain, num_notes)
+
+newStream = stream.Part()
+for i in range(num_notes):
+    try:
+        #print(i)
+        n = note.Note(test_sequence[i])
+        n.quarterLength = sampleStream.flatten().notes[i].quarterLength
+        newStream.append(n)
+    except:
+        pass # skip invalid notes
+
+newStream.show("text")
+
+
+"""
+
+"""
 def create_composition():
     score = stream.Score()
     score.append(tempo.MetronomeMark(number=TEMPO_BPM))
@@ -87,13 +167,13 @@ def create_composition():
         except:
             pass
 
-    score.append(melody_part)
+    score.append(newStream)
     score.append(chord_part)
 
     # score.makeMeasures()
 
     # Show music
-    score.show('midi')
+    #score.show('midi')
     score.show()
     score.show('text')
 
