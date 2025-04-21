@@ -10,6 +10,7 @@ mood_mode_map = {
     'angry': scale.PhrygianScale
 }
 
+# Do: FIRST FITNESS FUNCTION: check how well notes match with chord
 """
 generalFitnessFunction
 Input: A measure of a melody, and a measure of a harmony chord
@@ -24,6 +25,7 @@ def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int
     return fitness / len(melody.notes)
 
 
+# SECOND FITNESS FUNCTION: check how well measure's notes fit in with mode
 """
 fitness_function
 Input: A measure, the mood given, and the tonic
@@ -35,15 +37,41 @@ def fitness_function(measure, mood, tonic='C'):
     mode_class = mood_mode_map[mood](tonic)
     allowed_pitches = set(p.name for p in mode_class.getPitches())
 
+    elements = list(measure.flat.notesAndRests)
+
     score = 0
-    for element in measure.flat.notesAndRests:
+    for i, element in enumerate(elements):
         if isinstance(element, note.Note):
             if element.name in allowed_pitches:
-                score += 1
+                score += 2
         elif isinstance(element, chord.Chord):
             for n in element.notes:
                 if n.name in allowed_pitches:
-                    score += 1
+                    score += 2
+
+        if isinstance(element, note.Note):
+            if i + 1 < len(elements):
+                next_elem = elements[i + 1]
+                if isinstance(next_elem, note.Note):
+                    note_interval = interval.Interval(element, next_elem)
+                    interval_name = note_interval.name
+
+                    if mood == 'happy':
+                        if interval_name == 'M3' or interval_name == 'M-3':
+                            score +=1
+                        if interval_name == 'P5' or interval_name == 'P-5':
+                            score +=1
+                    if mood == 'sad':
+                        if interval_name == 'm2' or interval_name == 'm-2':
+                            score +=1
+                        if interval_name == 'M6' or interval_name == 'M-6':
+                            score +=1
+                    if mood == 'angry':
+                        if interval_name == 'm3' or interval_name == 'm-3':
+                            score +=1
+                        if interval_name == 'm7' or interval_name == 'm-7':
+                            score +=1
+
     return score
 
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
@@ -92,8 +120,19 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     new_score.show()
 
 if __name__ == "__main__":
-    final_piece(mood='happy')
+    print("Enter a mood (happy, sad, or angry): ")
+    mood_options = ['happy','sad','angry']
+    mood = input()
+    while mood not in mood_options:
+        print("Invalid mood, run again.")
+        mood = input()
+    else:
+        print("\nSelected mood:" + mood +".\n")
 
+    final_piece(mood=mood)
+    
+    
+    
 def crossover_measures_by_beat(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0) -> tuple[stream.Measure, stream.Measure]:
     def split_by_beat(m):
         first_half = stream.Measure(number=m.number)
