@@ -89,7 +89,31 @@ def inversion(melody: stream.Measure, harmony: stream.Measure)->stream.Measure:
     new_measure.append(c)
     return new_measure
         
-
+def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0) -> tuple[stream.Measure, stream.Measure]:
+    def split_by_beat(m):
+        first_half = stream.Measure(number=m.number)
+        second_half = stream.Measure(number=m.number)
+        for el in m:
+            if isinstance(el, (note.Note, note.Rest, chord.Chord)):
+                if el.offset < split_beat:
+                    first_half.insert(el.offset, copy.deepcopy(el))
+                else:
+                    second_half.insert(el.offset - split_beat, copy.deepcopy(el))
+        return first_half, second_half
+    m1_first, m1_second = split_by_beat(measure1)
+    m2_first, m2_second = split_by_beat(measure2)
+    child1 = stream.Measure(number=measure1.number)
+    child2 = stream.Measure(number=measure2.number)
+    # Combine halves
+    for el in m1_first:
+        child1.insert(el.offset, el)
+    for el in m2_second:
+        child1.insert(el.offset + split_beat, el)
+    for el in m2_first:
+        child2.insert(el.offset, el)
+    for el in m1_second:
+        child2.insert(el.offset + split_beat, el)
+    return child1, child2
 
 
 
