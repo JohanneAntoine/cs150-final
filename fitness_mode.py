@@ -20,15 +20,16 @@ Output: The proportion of similar notes to the number of melody notes
 def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int:
     fitness = 0
     for note in melody.notes:
-        if note.pitch in harmony.notes[0].pitches:
+        if note.pitch.name in list(map(lambda p: p.name, harmony.notes[0].pitches)):
             fitness += 1
-    return fitness / len(melody.notes)
+    return fitness / len(melody.notes) * 10
 
 
-# SECOND FITNESS FUNCTION: check how well measure's notes fit in with mode
 """
 fitness_function
 Input: A measure, the mood given, and the tonic
+Description: check how well measure's notes fit in with mode
+Output: The fitness score
 """
 def fitness_function(measure, mood, tonic='C'):
     if mood not in mood_mode_map:
@@ -48,6 +49,30 @@ def fitness_function(measure, mood, tonic='C'):
                     score += 1
     return score
 
+def inversion(melody: stream.Measure, harmony: stream.Measure)->stream.Measure:
+    c = harmony.notes[0]
+    base_pitch = c.root()
+    new_measure = stream.Measure()
+    new_melody = stream.Part()
+    for note in melody.notes:
+        p = note.pitch.ps
+        distance = p - base_pitch.ps 
+        new_note = note.Note(base_pitch-distance)
+        new_melody.append(new_note)
+    new_measure.append(new_melody)
+    new_measure.append(c)
+    return new_measure
+        
+
+
+
+
+"""
+final_piece
+Input: a filepath, the mode, the tonic, and the number of measures we want to return
+Description: Given a generated piece, calculate the fitness of each measure, and sort them in order.
+Output: The top n measures
+"""
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
     if not os.path.exists(filepath):
         generate_markov.create_composition()
@@ -62,12 +87,15 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     fitness_measures = []
     for i in range(num_measures):
         composite_measure = stream.Measure(number=i + 1)
+        m1 = parts[0].measure(i+1)
+        m2 = parts[1].measure(i+1)
         for part in parts:
             part_measures = part.getElementsByClass(stream.Measure)
             if i < len(part_measures):
                 composite_measure.append(part_measures[i].flat.notesAndRests.stream())
 
-        fitness = fitness_function(composite_measure, mood, tonic)
+
+        fitness = fitness_function(composite_measure, mood, tonic) + generalFitnessFunction(m1, m2)
         print(f"Measure {i+1}: Fitness = {fitness}")
 
         # Store full part-specific measures to rebuild later
