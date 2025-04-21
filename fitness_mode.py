@@ -11,6 +11,12 @@ mood_mode_map = {
 }
 
 # Do: FIRST FITNESS FUNCTION: check how well notes match with chord
+"""
+generalFitnessFunction
+Input: A measure of a melody, and a measure of a harmony chord
+Description: Compares how many notes in the melody were in the chord
+Output: The proportion of similar notes to the number of melody notes
+"""
 def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int:
     fitness = 0
     for note in melody.notes:
@@ -20,6 +26,10 @@ def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int
 
 
 # SECOND FITNESS FUNCTION: check how well measure's notes fit in with mode
+"""
+fitness_function
+Input: A measure, the mood given, and the tonic
+"""
 def fitness_function(measure, mood, tonic='C'):
     if mood not in mood_mode_map:
         raise ValueError(f"Unsupported mood: {mood}")
