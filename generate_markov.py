@@ -176,6 +176,7 @@ def create_composition():
     #score.show('midi')
     score.show()
     score.show('text')
+    score.write('musicxml', 'generated_piece.musicxml')
 
 if __name__ == "__main__":
     create_composition()
