@@ -73,8 +73,7 @@ def generate_sequence(chain, count):
         sequence.append(next_element)
     return sequence[:count]
 
-melody_sequence = generate_sequence(melody_chain, MELODY_NOTE_COUNT)
-chord_sequence = generate_sequence(chord_chain, CHORD_COUNT)
+
 
 #STOCHASTIC BINARY SUBDIVISION
 class instr:
@@ -111,38 +110,44 @@ def divvy(ip: instr, low, hi):
 
 sampleStream = stream.Stream()
 
-for i in range(MEASURES):
-    sampleMeasure = instr(0.80, 0.25)
-    divvy(sampleMeasure, 0.0, 4.0)
-    sampleStream.append(sampleMeasure.pat)
-
-sampleStream.show("text")
-
-num_notes = len(sampleStream.flatten().notes)
 
 
-
-test_sequence = generate_sequence(melody_chain, num_notes)
-
-newStream = stream.Part()
-for i in range(num_notes):
-    try:
-        #print(i)
-        n = note.Note(test_sequence[i])
-        n.quarterLength = sampleStream.flatten().notes[i].quarterLength
-        newStream.append(n)
-    except:
-        pass # skip invalid notes
-
-newStream.show("text")
+#newStream.show("text")
 
 
 """
-
+create_composition
+Input: None
+Description: Using Stochastic Binary Subdivision and Markov Chains, generate a melody and harmony
+Output: The function creates a score and writes the music xml file to 'generated_piece.musicxml'
 """
-def create_composition():
+def create_composition(measures: int):
     score = stream.Score()
     score.append(tempo.MetronomeMark(number=TEMPO_BPM))
+    melody_sequence = generate_sequence(melody_chain, MELODY_NOTE_COUNT)
+    chord_sequence = generate_sequence(chord_chain, CHORD_COUNT)
+    for i in range(measures):
+        sampleMeasure = instr(0.80, 0.25)
+        divvy(sampleMeasure, 0.0, 4.0)
+        sampleStream.append(sampleMeasure.pat)
+
+
+
+    num_notes = len(sampleStream.flatten().notes)
+
+
+
+    test_sequence = generate_sequence(melody_chain, num_notes)
+
+    newStream = stream.Part()
+    for i in range(num_notes):
+        try:
+            #print(i)
+            n = note.Note(test_sequence[i])
+            n.quarterLength = sampleStream.flatten().notes[i].quarterLength
+            newStream.append(n)
+        except:
+            pass # skip invalid notes
 
     # Melody Part
     melody_part = stream.Part()
@@ -174,8 +179,8 @@ def create_composition():
 
     # Show music
     #score.show('midi')
-    score.show()
-    score.show('text')
+    # score.show()
+    # score.show('text')
     score.write('musicxml', 'generated_piece.musicxml')
 
 if __name__ == "__main__":
