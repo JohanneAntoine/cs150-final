@@ -3,6 +3,7 @@ import os
 import generate_markov
 import copy
 import time
+from random import random
 
 mood_mode_map = {
     'happy': scale.LydianScale,
@@ -49,18 +50,16 @@ def fitness_function(measure, mood, tonic='C'):
                     score += 1
     return score
 
-def inversion(melody: stream.Measure, harmony: stream.Measure)->stream.Measure:
+def inversion(melody: stream.Measure, harmony: stream.Measure):
     c = harmony.notes[0]
     base_pitch = c.root()
     new_measure = stream.Measure()
-    new_melody = stream.Part()
-    for note in melody.notes:
-        p = note.pitch.ps
+    for n in melody.notes:
+        p = n.pitch.ps
         distance = p - base_pitch.ps 
-        new_note = note.Note(base_pitch-distance)
-        new_melody.append(new_note)
-    new_measure.append(new_melody)
-    new_measure.append(c)
+        new_note = note.Note(base_pitch.ps-distance)
+        new_note.quarterLength = n.quarterLength
+        new_measure.append(new_note.transpose('P8'))
     return new_measure
         
 
@@ -105,6 +104,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     # Select top-N scoring bundles
     best_measures = sorted(fitness_measures, key=lambda x: x[1], reverse=True)[:top_n]
 
+    
+
     # Rebuild parts from top measures
     new_score = stream.Score()
     for p_idx in range(len(parts)):
@@ -117,9 +118,28 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
             new_part.append(m)
         new_score.append(new_part)
 
-    time.sleep(15)
-    new_score.show('midi')
-    new_score.show()
+    mutated_score = stream.Score()
+    mutated_melody = stream.Part()
+
+    for i in range(1, len(new_score.parts[0].getElementsByClass('Measure'))+1):
+        mutation = random()
+        m1 = new_score.parts[0].measure(i)
+        m2 = new_score.parts[1].measure(i)
+        if mutation <= 0.25:
+            mutated_melody.append(inversion(m1, m2))
+        else:
+            mutated_melody.append(m1)
+
+    mutated_score.append(mutated_melody)
+    mutated_score.insert(0, new_score.parts[1])
+
+    mutated_score.makeMeasures()
+
+    
+
+    time.sleep(10)
+    # mutated_score.show('midi')
+    mutated_score.show()
 
 if __name__ == "__main__":
     final_piece(mood='happy')
