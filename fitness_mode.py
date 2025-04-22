@@ -10,25 +10,28 @@ mood_mode_map = {
     'angry': scale.PhrygianScale
 }
 
-# Do: FIRST FITNESS FUNCTION: check how well notes match with chord
 """
 generalFitnessFunction
 Input: A measure of a melody, and a measure of a harmony chord
 Description: Compares how many notes in the melody were in the chord
 Output: The proportion of similar notes to the number of melody notes
 """
-def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure)->int:
+def generalFitnessFunction(melody: stream.Measure, harmony: stream.Measure) -> int:
     fitness = 0
+    if len(melody.notes) == 0:
+        return 0  # or maybe return a small penalty like -5, depending on your scoring logic
     for note in melody.notes:
-        if note.pitch in harmony.notes[0].pitches:
+        if note.pitch.name in list(map(lambda p: p.name, harmony.notes[0].pitches)):
             fitness += 1
-    return fitness / len(melody.notes)
+    return fitness / len(melody.notes) * 10
 
 
-# SECOND FITNESS FUNCTION: check how well measure's notes fit in with mode
+
 """
 fitness_function
 Input: A measure, the mood given, and the tonic
+Description: check how well measure's notes fit in with mode
+Output: The fitness score
 """
 def fitness_function(measure, mood, tonic='C'):
     if mood not in mood_mode_map:
@@ -74,6 +77,54 @@ def fitness_function(measure, mood, tonic='C'):
 
     return score
 
+def inversion(melody: stream.Measure, harmony: stream.Measure)->stream.Measure:
+    c = harmony.notes[0]
+    base_pitch = c.root()
+    new_measure = stream.Measure()
+    new_melody = stream.Part()
+    for note in melody.notes:
+        p = note.pitch.ps
+        distance = p - base_pitch.ps 
+        new_note = note.Note(base_pitch-distance)
+        new_melody.append(new_note)
+    new_measure.append(new_melody)
+    new_measure.append(c)
+    return new_measure
+        
+def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0) -> tuple[stream.Measure, stream.Measure]:
+    def split_by_beat(m):
+        first_half = stream.Measure(number=m.number)
+        second_half = stream.Measure(number=m.number)
+        for el in m:
+            if isinstance(el, (note.Note, note.Rest, chord.Chord)):
+                if el.offset < split_beat:
+                    first_half.insert(el.offset, copy.deepcopy(el))
+                else:
+                    second_half.insert(el.offset - split_beat, copy.deepcopy(el))
+        return first_half, second_half
+    m1_first, m1_second = split_by_beat(measure1)
+    m2_first, m2_second = split_by_beat(measure2)
+    child1 = stream.Measure(number=measure1.number)
+    child2 = stream.Measure(number=measure2.number)
+    # Combine halves
+    for el in m1_first:
+        child1.insert(el.offset, el)
+    for el in m2_second:
+        child1.insert(el.offset + split_beat, el)
+    for el in m2_first:
+        child2.insert(el.offset, el)
+    for el in m1_second:
+        child2.insert(el.offset + split_beat, el)
+    return child1, child2
+
+
+
+"""
+final_piece
+Input: a filepath, the mode, the tonic, and the number of measures we want to return
+Description: Given a generated piece, calculate the fitness of each measure, and sort them in order.
+Output: The top n measures
+"""
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
     if not os.path.exists(filepath):
         generate_markov.create_composition()
@@ -88,27 +139,48 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     fitness_measures = []
     for i in range(num_measures):
         composite_measure = stream.Measure(number=i + 1)
+        m1 = parts[0].measure(i + 1)
+        m2 = parts[1].measure(i + 1)
         for part in parts:
             part_measures = part.getElementsByClass(stream.Measure)
             if i < len(part_measures):
-                composite_measure.append(part_measures[i].flat.notesAndRests.stream())
+                for elem in part_measures[i].flat.notesAndRests:
+                    composite_measure.append(copy.deepcopy(elem))
 
-        fitness = fitness_function(composite_measure, mood, tonic)
-        print(f"Measure {i+1}: Fitness = {fitness}")
+        fitness = fitness_function(composite_measure, mood, tonic) + generalFitnessFunction(m1, m2)
+        print(f"Measure {i + 1}: Fitness = {fitness}")
 
-        # Store full part-specific measures to rebuild later
         measure_bundle = [copy.deepcopy(part.measure(i + 1)) for part in parts]
         fitness_measures.append((measure_bundle, fitness))
 
-    # Select top-N scoring bundles
     best_measures = sorted(fitness_measures, key=lambda x: x[1], reverse=True)[:top_n]
 
-    # Rebuild parts from top measures
+    # Mood-based instrument + tempo map
+    instrument_map = {
+        'happy': instrument.AltoSaxophone(),
+        'sad': instrument.Piano(),
+        'angry': instrument.Trumpet()
+    }
+
+    tempo_map = {
+        'happy': 100,
+        'sad': 60,
+        'angry': 130
+    }
+
     new_score = stream.Score()
     for p_idx in range(len(parts)):
         new_part = stream.Part()
-        new_part.insert(0, parts[p_idx].getInstrument())
-        new_part.insert(0, tempo.MetronomeMark(number=80))
+
+        # Insert appropriate instrument
+        if p_idx == 0:  # Melody
+            new_part.insert(0, instrument_map[mood])
+        else:  # Harmony
+            new_part.insert(0, instrument.Piano())
+
+        # Insert mood-specific tempo
+        new_part.insert(0, tempo.MetronomeMark(number=tempo_map[mood]))
+
         for m_idx, (measure_bundle, _) in enumerate(best_measures):
             m = measure_bundle[p_idx]
             m.number = m_idx + 1
@@ -118,6 +190,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     time.sleep(15)
     new_score.show('midi')
     new_score.show()
+
 
 if __name__ == "__main__":
     print("Enter a mood (happy, sad, or angry): ")
@@ -130,36 +203,3 @@ if __name__ == "__main__":
         print("\nSelected mood:" + mood +".\n")
 
     final_piece(mood=mood)
-    
-    
-    
-def crossover_measures_by_beat(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0) -> tuple[stream.Measure, stream.Measure]:
-    def split_by_beat(m):
-        first_half = stream.Measure(number=m.number)
-        second_half = stream.Measure(number=m.number)
-
-        for el in m:
-            if isinstance(el, (note.Note, note.Rest, chord.Chord)):
-                if el.offset < split_beat:
-                    first_half.insert(el.offset, copy.deepcopy(el))
-                else:
-                    second_half.insert(el.offset - split_beat, copy.deepcopy(el))
-        return first_half, second_half
-
-    m1_first, m1_second = split_by_beat(measure1)
-    m2_first, m2_second = split_by_beat(measure2)
-    child1 = stream.Measure(number=measure1.number)
-    child2 = stream.Measure(number=measure2.number)
-
-    # Combine halves
-    for el in m1_first:
-        child1.insert(el.offset, el)
-    for el in m2_second:
-        child1.insert(el.offset + split_beat, el)
-
-    for el in m2_first:
-        child2.insert(el.offset, el)
-    for el in m1_second:
-        child2.insert(el.offset + split_beat, el)
-
-    return child1, child2
