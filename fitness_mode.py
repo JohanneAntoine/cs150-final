@@ -126,8 +126,7 @@ Description: Given a generated piece, calculate the fitness of each measure, and
 Output: The top n measures
 """
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
-    if not os.path.exists(filepath):
-        generate_markov.create_composition()
+    generate_markov.create_composition()
 
     score_stream = converter.parse(filepath)
     score_stream.show('midi')
