@@ -4,7 +4,7 @@ import generate_markov
 import copy
 import time
 import drums
-import random
+from random import random
 
 mood_mode_map = {
     'happy': scale.LydianScale,
@@ -183,13 +183,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
                 new_part.append(m)
             new_score.append(new_part)
 
-    # DRUMS
-    num_total_measures = len(best_measures)
-    drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
-    drum_part = drums.sequence_to_stream(drum_seq)
-
-    drum_part.makeMeasures(inPlace=True)
-    new_score.append(drum_part)
+   
 
         
         
@@ -229,7 +223,13 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     mutated_score.metadata.title = "Emotional Jazz"
     mutated_score.metadata.composer = "Eileen Chen, Ezra Jonath, Johanne Antoine"
 
-    
+     # DRUMS
+    num_total_measures = len(mutated_score)
+    drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
+    drum_part = drums.sequence_to_stream(drum_seq)
+
+    drum_part.makeMeasures(inPlace=True)
+    new_score.append(drum_part)
 
     #time.sleep(10)
     # mutated_score.show('midi')
