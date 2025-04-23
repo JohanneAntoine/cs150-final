@@ -3,6 +3,8 @@ import os
 import generate_markov
 import copy
 import time
+import drums
+import random
 
 mood_mode_map = {
     'happy': scale.LydianScale,
@@ -74,7 +76,7 @@ def fitness_function(measure, mood, tonic='C'):
 
     return score
 
-def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
+def final_piece(filepath='generated_piece.musicxml', mood="happy", tonic='C', top_n=2):
     if not os.path.exists(filepath):
         generate_markov.create_composition()
 
@@ -115,16 +117,70 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
             new_part.append(m)
         new_score.append(new_part)
 
+    # DRUMS
+    num_total_measures = len(best_measures)
+    drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
+    drum_part = drums.sequence_to_stream(drum_seq)
+
+    drum_part.makeMeasures(inPlace=True)
+    new_score.append(drum_part)
+
     time.sleep(15)
     new_score.show('midi')
     new_score.show()
+
+
+def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
+    """
+    Randomly mutates a measure's notes/chords to conform to the scale for a given mood.
+    
+    Parameters:
+        measure: music21.stream.Measure
+        mood: 'happy', 'sad', 'angry' (maps to Lydian, Dorian, Phrygian)
+        tonic: tonic root note (default 'C')
+        mutation_rate: probability of mutation per note/chord tone (0.0 to 1.0)
+        
+    Returns:
+        A mutated copy of the measure.
+    """
+    if mood not in mood_mode_map:
+        raise ValueError(f"Unsupported mood: {mood}")
+    
+    #allowed_pitches = [p.name for p in mode_class.getPitches(tonic + '3', tonic + '6')]
+    mode_class = mood_mode_map[mood](tonic)
+    allowed_pitches = set(p.name for p in mode_class.getPitches())
+
+
+    mutated = copy.deepcopy(measure)
+
+    for element in mutated.recurse().notesAndRests:
+        if isinstance(element, note.Note):
+            if random.random() < mutation_rate:
+                new_pitch = random.choice(allowed_pitches)
+                element.name = new_pitch
+
+        elif isinstance(element, chord.Chord):
+            new_pitches = []
+            for _ in element.pitches:
+                if random.random() < mutation_rate:
+                    new_note = random.choice(allowed_pitches)
+                    new_pitches.append(new_note)
+                else:
+                    new_pitches.append(_.name)  # retain existing note
+            element.clearPitches()
+            for p in new_pitches:
+                element.add(pitch.Pitch(p))
+
+    return mutated
+
+
 
 if __name__ == "__main__":
     print("Enter a mood (happy, sad, or angry): ")
     mood_options = ['happy','sad','angry']
     mood = input()
     while mood not in mood_options:
-        print("Invalid mood, run again.")
+        print("Invalid mood, try again.")
         mood = input()
     else:
         print("\nSelected mood:" + mood +".\n")
