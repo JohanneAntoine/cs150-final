@@ -1,3 +1,4 @@
+import sys
 from music21 import *
 import os
 import generate_markov
@@ -5,6 +6,7 @@ import copy
 import time
 import drums
 import random
+import pickle 
 
 mood_mode_map = {
     'happy': scale.LydianScale,
@@ -141,8 +143,8 @@ Output: The top n measures
 """
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2, prob=0.5):
     size = 8
-    population = []
-    generations = 1
+
+    generations = 8
     mutated_score = stream.Score()
     mutated_melody = stream.Part()
     final_harmony = stream.Part()
@@ -158,8 +160,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         
         #os.remove(filepath)
         # score_stream.show('midi')
-        score_stream.show("text")
-        new_population = []
+        #score_stream.show("text")
+
         fitness_measures = []
         for i in range(size):
             composite_measure = stream.Measure(number=i + 1)
@@ -201,27 +203,25 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         skip_next = False
         for i in range(1, len(new_score.parts[0].getElementsByClass('Measure'))+1):
             print("i = ", i)
-            if skip_next:
-                skip_next = False
-                continue
+            # if skip_next:
+            #     skip_next = False
+            #     continue
             mutation = random.random()
             m1 = copy.deepcopy(new_score.parts[0].measure(i))
             m2 = new_score.parts[1].measure(i)
-            #print(mutation)
-            # perform inversion 
-            if mutation <= 0.33:
+            if mutation <= 0.25:
                 mutated_melody.append(inversion(m1, m2))
                 print("inversion")
             # perform multiple-point mutation
-            if mutation >= 0.33 and mutation <= 0.90:
-                mutated = mutate_measure(m1, mood, tonic, mutation_rate=0.5)
-                new_score.append(mutated)
+            elif mutation >= 0.25 and mutation <= 0.50:
                 print("mutationated")
+                mutated = mutate_measure(m1, mood, tonic, mutation_rate=0.5)
+                mutated_melody.append(mutated)
             # perform crossover 
-            elif mutation <= 0.67 and i <= len(new_score.parts[0].getElementsByClass('Measure')) - 1:
+            elif mutation <= 0.80 and i <= len(new_score.parts[0].getElementsByClass('Measure')) - 1:
                 mutated_melody.append(crossover(m1, new_score.parts[0].measure(i+1)))
-                skip_next = True
                 print ("crossover")
+                break
             else:
                 mutated_melody.append(list(m1.notes))
 
@@ -234,6 +234,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
         print("finished gen")
         final_harmony.append(chords)
+
+    mutated_melody.show("text")
         
     mutated_score.append(mutated_melody.makeMeasures())
     mutated_score.insert(0, final_harmony)
@@ -249,11 +251,14 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     drum_part = drums.sequence_to_stream(drum_seq)
 
     drum_part.makeMeasures(inPlace=True)
-    mutated_score.append(drum_part)
+    mutated_score.insert(0,drum_part)
 
     #time.sleep(10)
-    # mutated_score.show('midi')
-    mutated_score.show()
+    mutated_score.show('midi')
+    preloaded_file = open('examplePickle', 'ab')
+    preloaded_notes = pickle.dump(mutated_score, preloaded_file)
+    preloaded_file.close()
+    #mutated_score.show("text")
 
 
 """
@@ -270,47 +275,60 @@ def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
     #allowed_pitches = [p.name for p in mode_class.getPitches(tonic + '3', tonic + '6')]
     mode_class = mood_mode_map[mood](tonic)
     # allowed_pitches = set(p.name for p in mode_class.getPitches())
-    allowed_pitches = [p.name for p in mode_class.getPitches()]
+    allowed_pitches = [p for p in mode_class.getPitches()]
 
     mutated = copy.deepcopy(measure)
+    print("Mutated")
+    mutated.show("text")
+    mutated_result = stream.Measure()
 
-    for element in mutated.recurse().notesAndRests:
-        if isinstance(element, note.Note):
-            if random.random() < mutation_rate:
-                new_pitch = random.choice(allowed_pitches)
-                element.name = new_pitch
+    for element in mutated.notes:
+        if random.random() < mutation_rate:
+            new_pitch = random.choice(allowed_pitches)
+            element.pitch = new_pitch
+        mutated_result.append(element)
 
-        elif isinstance(element, chord.Chord):
-            new_pitches = []
-            for _ in element.pitches:
-                if random.random() < mutation_rate:
-                    new_note = random.choice(allowed_pitches)
-                    new_pitches.append(new_note)
-                else:
-                    new_pitches.append(_.name)  # retain existing note
-            element.clearPitches()
-            for p in new_pitches:
-                element.add(pitch.Pitch(p))
+        # elif isinstance(element, chord.Chord):
+        #     new_pitches = []
+        #     for _ in element.pitches:
+        #         if random.random() < mutation_rate:
+        #             new_note = random.choice(allowed_pitches)
+        #             new_pitches.append(new_note)
+        #         else:
+        #             new_pitches.append(_.name)  # retain existing note
+        #     element.clearPitches()
+        #     for p in new_pitches:
+        #         element.add(pitch.Pitch(p))
 
-    return mutated
+    print("Result")
+    mutated_result.show("text")
+    print(list(mutated_result.notes))
+    return list(mutated_result.notes)
 
 
 
 if __name__ == "__main__":
-    print("Enter a mood (happy, sad, or angry): ")
-    mood_options = ['happy','sad','angry']
-    mood = input()
-    while mood not in mood_options:
-        print("Invalid mood, try again.")
+    if ("-p" in sys.argv) and os.path.exists("examplePickle"):
+        preloaded_file = open('examplePickle', 'rb')
+        preloaded_notes = pickle.load(preloaded_file)
+        finalStream = stream.Stream()
+        finalStream.append(preloaded_notes)
+        preloaded_file.close()
+    else:
+        print("Enter a mood (happy, sad, or angry): ")
+        mood_options = ['happy','sad','angry']
         mood = input()
-    else:
-        print("\nSelected mood:" + mood +".\n")
-    
-    if mood=='happy':
-        prob = 0.6 
-    elif mood == 'sad':
-        prob=0.3
-    else:
-        prob = 0.8
+        while mood not in mood_options:
+            print("Invalid mood, try again.")
+            mood = input()
+        else:
+            print("\nSelected mood:" + mood +".\n")
+        
+        if mood=='happy':
+            prob = 0.6 
+        elif mood == 'sad':
+            prob=0.3
+        else:
+            prob = 0.8
 
-    final_piece(mood=mood, prob=prob)
+        final_piece(mood=mood, prob=prob)
