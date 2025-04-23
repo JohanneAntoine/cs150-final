@@ -4,8 +4,8 @@ Eileen Chen (echen23)
 Ezra Jonah (sjonat01)
 
 2. How to run our code:
-Run the program to generate sheet music: python -s fitness_mode.py
-Run the program to generate midi: python -m fitness_mode.py
+Run the program to generate sheet music: python fitness_mode.py -s 
+Run the program to generate midi: python fitness_mode.py -m 
 
 3. High-level summary of compositional approach:
 Our composition aims to algorithmically generate emotionally-driven jazz music

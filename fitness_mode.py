@@ -5,11 +5,24 @@ import copy
 import time
 import drums
 import random
+import sys
 
 mood_mode_map = {
     'happy': scale.LydianScale,
     'sad': scale.DorianScale,
     'angry': scale.PhrygianScale
+}
+
+instrument_map = {
+    'happy': instrument.AltoSaxophone(),
+    'sad': instrument.Piano(),
+    'angry': instrument.Trumpet()
+}
+
+tempo_map = {
+    'happy': 100,
+    'sad': 60,
+    'angry': 130
 }
 
 # Do: FIRST FITNESS FUNCTION: check how well notes match with chord
@@ -127,7 +140,7 @@ Input: a filepath, the mode, the tonic, and the number of measures we want to re
 Description: Given a generated piece, calculate the fitness of each measure, and sort them in order.
 Output: The top n measures
 """
-def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2, prob=0.5):
+def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2, prob=0.5, output_mode="midi"):
     size = 8
     population = []
     generations = 8
@@ -135,6 +148,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     mutated_melody = stream.Part()
     final_harmony = stream.Part()
     
+    instrument_for_mood = instrument_map[mood]  # Get the instrument from the map
+    tempo_for_mood = tempo_map[mood]  # Get the tempo from the map
     
 
     for j in range(generations):
@@ -187,6 +202,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         
         chords = []
         skip_next = False
+
+        # Perform mating & mutations
         for i in range(1, len(new_score.parts[0].getElementsByClass('Measure'))+1):
             print("i = ", i)
             if skip_next:
@@ -203,7 +220,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
             # perform multiple-point mutation
             if mutation >= 0.33 and mutation <= 0.90:
                 mutated = mutate_measure(m1, mood, tonic, mutation_rate=0.5)
-                new_score.append(mutated)
+                mutated_melody.append(mutated)
                 print("mutationated")
             # perform crossover 
             elif mutation <= 0.67 and i <= len(new_score.parts[0].getElementsByClass('Measure')) - 1:
@@ -218,11 +235,38 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
             cMeasure = stream.Measure()
             cMeasure.append(m2.notes[0])
             chords.append(cMeasure)
-            
+
+        # ## ADDED    
+        # for i in range(len(mutated_melody)):
+        #     m2 = new_score.parts[1].measure(min(i + 1, len(new_score.parts[1].getElementsByClass('Measure'))))
+        #     cMeasure = stream.Measure()
+        #     cMeasure.append(copy.deepcopy(m2.notes[0]))
+        #     chords.append(cMeasure)
+
 
         print("finished gen")
         final_harmony.append(chords)
         
+       # Set instrument and tempo for melody part
+    mutated_melody.insert(0, instrument_for_mood)
+    mutated_melody.insert(0, tempo.MetronomeMark(number=tempo_for_mood))
+
+    # Set a default instrument (e.g., Piano) for harmony if you want
+    final_harmony.insert(0, instrument.Piano())
+    final_harmony.insert(0, tempo.MetronomeMark(number=tempo_for_mood))
+
+    # for i, m in enumerate(mutated_melody):
+    #     harmony_note = chord.Chord([m.notes[0].name]) if m.notes else note.Rest()
+    #     harmony_measure = stream.Measure(number=i + 1)
+    #     harmony_measure.append(harmony_note)
+    #     final_harmony.append(harmony_measure)
+
+    print("melody len ", len(mutated_melody.getElementsByClass(stream.Measure)))
+    print("hamony len", len(final_harmony.getElementsByClass(stream.Measure)))
+    for _ in range(5):
+        last_measure = mutated_melody.getElementsByClass(stream.Measure)[-1]
+        mutated_melody.remove(last_measure)
+
     mutated_score.append(mutated_melody.makeMeasures())
     mutated_score.insert(0, final_harmony)
     mutated_score.makeMeasures()
@@ -233,15 +277,29 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
      # DRUMS
     num_total_measures = size * 4
+    # drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
+    #num_measures=len(mutated_melody.getElementsByClass(stream.Measure))
+
+    #ADDED
     drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
+
     drum_part = drums.sequence_to_stream(drum_seq)
+
+    # drum_seq = drums.generate_sequence(mood, num_measures=len(mutated_melody))
+    # drum_part = drums.sequence_to_stream(drum_seq, swing=True)
+    # drum_part.makeMeasures(inPlace=True)
 
     drum_part.makeMeasures(inPlace=True)
     mutated_score.append(drum_part)
 
-    #time.sleep(10)
-    # mutated_score.show('midi')
-    mutated_score.show('midi')
+
+    if output_mode == "midi": 
+        mutated_score.show('midi')
+    elif output_mode == "score": 
+        mutated_score.show()
+    else:
+        mutated_score.show('text')
+    #mutated_score.show()
 
 
 def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
@@ -290,6 +348,14 @@ def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
 
 
 if __name__ == "__main__":
+
+    if ("-m" in sys.argv):
+        output_mode = "midi"
+    elif ("-s" in sys.argv):
+       output_mode = "score"
+    else:
+        output_mode = "text"
+
     print("Enter a mood (happy, sad, or angry): ")
     mood_options = ['happy','sad','angry']
     mood = input()
@@ -306,4 +372,4 @@ if __name__ == "__main__":
     else:
         prob = 0.8
 
-    final_piece(mood=mood, prob=prob)
+    final_piece(mood=mood, prob=prob, output_mode=output_mode)
