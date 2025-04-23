@@ -39,15 +39,41 @@ def fitness_function(measure, mood, tonic='C'):
     mode_class = mood_mode_map[mood](tonic)
     allowed_pitches = set(p.name for p in mode_class.getPitches())
 
+    elements = list(measure.flat.notesAndRests)
+
     score = 0
-    for element in measure.flat.notesAndRests:
+    for i, element in enumerate(elements):
         if isinstance(element, note.Note):
             if element.name in allowed_pitches:
-                score += 1
+                score += 2
         elif isinstance(element, chord.Chord):
             for n in element.notes:
                 if n.name in allowed_pitches:
-                    score += 1
+                    score += 2
+
+        if isinstance(element, note.Note):
+            if i + 1 < len(elements):
+                next_elem = elements[i + 1]
+                if isinstance(next_elem, note.Note):
+                    note_interval = interval.Interval(element, next_elem)
+                    interval_name = note_interval.name
+
+                    if mood == 'happy':
+                        if interval_name == 'M3' or interval_name == 'M-3':
+                            score +=1
+                        if interval_name == 'P5' or interval_name == 'P-5':
+                            score +=1
+                    if mood == 'sad':
+                        if interval_name == 'm2' or interval_name == 'm-2':
+                            score +=1
+                        if interval_name == 'M6' or interval_name == 'M-6':
+                            score +=1
+                    if mood == 'angry':
+                        if interval_name == 'm3' or interval_name == 'm-3':
+                            score +=1
+                        if interval_name == 'm7' or interval_name == 'm-7':
+                            score +=1
+
     return score
 
 def inversion(melody: stream.Measure, harmony: stream.Measure):
@@ -63,6 +89,7 @@ def inversion(melody: stream.Measure, harmony: stream.Measure):
         new_measure.append(new_note)
     return list(new_measure.notes)
         
+
 def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0):
     def split_by_beat(m):
         first_half = stream.Measure(number=m.number)
@@ -208,5 +235,6 @@ if __name__ == "__main__":
         mood = input()
     else:
         print("\nSelected mood:" + mood +".\n")
+
 
     final_piece(mood=mood)
