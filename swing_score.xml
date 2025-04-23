@@ -19,14 +19,14 @@
     </scaling>
   </defaults>
   <part-list>
-    <score-part id="P583dd8490115a56d3ac8ee35492c65bc">
+    <score-part id="P65e4a2185229111afdbd2505659ea37c">
       <part-name>Woodblock</part-name>
       <part-abbreviation>Wd Bl</part-abbreviation>
-      <score-instrument id="I2853ac2f237b7cb7f9b549b60612b5c5">
+      <score-instrument id="Ia2b0aa923e14546170e2e3d319b9d2a2">
         <instrument-name>Woodblock</instrument-name>
         <instrument-abbreviation>Wd Bl</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="I2853ac2f237b7cb7f9b549b60612b5c5">
+      <midi-instrument id="Ia2b0aa923e14546170e2e3d319b9d2a2">
         <midi-channel>10</midi-channel>
         <midi-program>116</midi-program>
         <midi-unpitched>77</midi-unpitched>
@@ -34,7 +34,7 @@
     </score-part>
   </part-list>
   <!--=========================== Part 1 ===========================-->
-  <part id="P583dd8490115a56d3ac8ee35492c65bc">
+  <part id="P65e4a2185229111afdbd2505659ea37c">
     <!--========================= Measure 1 ==========================-->
     <measure implicit="no" number="1">
       <attributes>
@@ -65,26 +65,6 @@
       </note>
       <note dynamics="83.33">
         <pitch>
-          <step>C</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>5040</duration>
-        <type>eighth</type>
-        <stem>up</stem>
-        <beam number="1">end</beam>
-      </note>
-      <note dynamics="83.33">
-        <pitch>
-          <step>D</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>5040</duration>
-        <type>eighth</type>
-        <stem>up</stem>
-        <beam number="1">begin</beam>
-      </note>
-      <note dynamics="83.33">
-        <pitch>
           <step>D</step>
           <octave>2</octave>
         </pitch>
@@ -105,7 +85,7 @@
       </note>
       <note dynamics="83.33">
         <pitch>
-          <step>C</step>
+          <step>D</step>
           <octave>2</octave>
         </pitch>
         <duration>5040</duration>
@@ -115,7 +95,7 @@
       </note>
       <note dynamics="83.33">
         <pitch>
-          <step>D</step>
+          <step>C</step>
           <octave>2</octave>
         </pitch>
         <duration>5040</duration>
@@ -133,9 +113,6 @@
         <stem>up</stem>
         <beam number="1">end</beam>
       </note>
-    </measure>
-    <!--========================= Measure 2 ==========================-->
-    <measure implicit="no" number="2">
       <note dynamics="83.33">
         <pitch>
           <step>F</step>
@@ -150,7 +127,7 @@
       </note>
       <note dynamics="83.33">
         <pitch>
-          <step>D</step>
+          <step>C</step>
           <octave>2</octave>
         </pitch>
         <duration>5040</duration>
@@ -158,6 +135,9 @@
         <stem>up</stem>
         <beam number="1">end</beam>
       </note>
+    </measure>
+    <!--========================= Measure 2 ==========================-->
+    <measure implicit="no" number="2">
       <note dynamics="83.33">
         <pitch>
           <step>C</step>
@@ -201,6 +181,26 @@
       <note dynamics="83.33">
         <pitch>
           <step>C</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>5040</duration>
+        <type>eighth</type>
+        <stem>up</stem>
+        <beam number="1">begin</beam>
+      </note>
+      <note dynamics="83.33">
+        <pitch>
+          <step>C</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>5040</duration>
+        <type>eighth</type>
+        <stem>up</stem>
+        <beam number="1">end</beam>
+      </note>
+      <note dynamics="83.33">
+        <pitch>
+          <step>D</step>
           <octave>2</octave>
         </pitch>
         <duration>5040</duration>
