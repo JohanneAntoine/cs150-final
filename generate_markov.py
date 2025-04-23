@@ -121,13 +121,13 @@ Input: None
 Description: Using Stochastic Binary Subdivision and Markov Chains, generate a melody and harmony
 Output: The function creates a score and writes the music xml file to 'generated_piece.musicxml'
 """
-def create_composition(measures: int):
+def create_composition(measures: int, prob: float):
     score = stream.Score()
     score.append(tempo.MetronomeMark(number=TEMPO_BPM))
     melody_sequence = generate_sequence(melody_chain, MELODY_NOTE_COUNT)
     chord_sequence = generate_sequence(chord_chain, measures)
     for i in range(measures):
-        sampleMeasure = instr(0.80, 0.25)
+        sampleMeasure = instr(prob, 0.25)
         divvy(sampleMeasure, 0.0, 4.0)
         sampleStream.append(sampleMeasure.pat)
 
