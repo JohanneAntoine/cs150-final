@@ -266,18 +266,8 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     final_harmony.insert(0, instrument.Piano())
     final_harmony.insert(0, tempo.MetronomeMark(number=tempo_for_mood))
 
-    # for i, m in enumerate(mutated_melody):
-    #     harmony_note = chord.Chord([m.notes[0].name]) if m.notes else note.Rest()
-    #     harmony_measure = stream.Measure(number=i + 1)
-    #     harmony_measure.append(harmony_note)
-    #     final_harmony.append(harmony_measure)
-
-    print("melody len ", len(mutated_melody.getElementsByClass(stream.Measure)))
-    print("hamony len", len(final_harmony.getElementsByClass(stream.Measure)))
-    for _ in range(5):
-        last_measure = mutated_melody.getElementsByClass(stream.Measure)[-1]
-        mutated_melody.remove(last_measure)
-
+ 
+    # Append both parts to the mutated_score
     mutated_score.append(mutated_melody.makeMeasures())
     mutated_score.insert(0, final_harmony)
     mutated_score.makeMeasures()
@@ -293,7 +283,6 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
     #ADDED
     drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
-
     drum_part = drums.sequence_to_stream(drum_seq)
 
     # drum_seq = drums.generate_sequence(mood, num_measures=len(mutated_melody))
@@ -304,10 +293,18 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     mutated_score.insert(0,drum_part)
 
     #time.sleep(10)
-    mutated_score.show('midi')
+    
     preloaded_file = open('examplePickle', 'ab')
     preloaded_notes = pickle.dump(mutated_score, preloaded_file)
     preloaded_file.close()
+
+    if output_mode == "midi":
+        mutated_score.show('midi')
+    elif output_mode == "score":
+        mutated_score.show()
+    else:
+        mutated_score.show('text')
+
     #mutated_score.show("text")
 
 
@@ -365,28 +362,27 @@ if __name__ == "__main__":
         finalStream.append(preloaded_notes)
         preloaded_file.close()
     else:
-    
-    if ("-m" in sys.argv):
-        output_mode = "midi"
-    elif ("-s" in sys.argv):
-       output_mode = "score"
-    else:
-        output_mode = "text"
+        if ("-m" in sys.argv):
+            output_mode = "midi"
+        elif ("-s" in sys.argv):
+            output_mode = "score"
+        else:
+            output_mode = "text"
 
     print("Enter a mood (happy, sad, or angry): ")
-        mood_options = ['happy','sad','angry']
+    mood_options = ['happy','sad','angry']
+    mood = input()
+    while mood not in mood_options:
+        print("Invalid mood, try again.")
         mood = input()
-        while mood not in mood_options:
-            print("Invalid mood, try again.")
-            mood = input()
-        else:
-            print("\nSelected mood:" + mood +".\n")
-        
-        if mood=='happy':
-            prob = 0.6 
-        elif mood == 'sad':
-            prob=0.3
-        else:
-            prob = 0.8
+    else:
+        print("\nSelected mood:" + mood +".\n")
+    
+    if mood=='happy':
+        prob = 0.6 
+    elif mood == 'sad':
+        prob=0.3
+    else:
+        prob = 0.8
 
     final_piece(mood=mood, prob=prob, output_mode=output_mode)
