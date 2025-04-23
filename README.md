@@ -8,4 +8,13 @@ Run the program to generate sheet music: python -s fitness_mode.py
 Run the program to generate midi: python -m fitness_mode.py
 
 3. High-level summary of compositional approach:
-Our composition aims to algorithmically generate emotionally-driven jazz music by combining several techniques. We begin by mapping emotional categories (happiness, sadness, and anger) to musical modes and stylistic characteristics. Rhythm is generated using Stochastic Binary Subdivision, where base durations are recursively and probabilistically split depending on the emotional context. Melody improvisation follows using second-order Markov chains trained on a jazz database. Chords are also generated using separate second-order Markov chains. Next, we employ genetic algorithms to select measures where the melody and accompaniment align well, as well as those that match the assigned emotion, and then mutate them to create new variations.
+Our composition aims to algorithmically generate emotionally-driven jazz music
+by combining several techniques. We begin by mapping emotional categories 
+(happiness, sadness, and anger) to musical modes and stylistic characteristics. 
+Rhythm is generated using Stochastic Binary Subdivision, where base durations 
+are recursively and probabilistically split depending on the emotional context. 
+Melody improvisation follows using second-order Markov chains trained on a jazz 
+database. Chords are also generated using separate second-order Markov chains. 
+Next, we employ genetic algorithms to select measures where the melody and 
+accompaniment align well, as well as those that match the assigned emotion, 
+and then mutate them to create new variations.

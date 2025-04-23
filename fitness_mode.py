@@ -4,7 +4,7 @@ import generate_markov
 import copy
 import time
 import drums
-from random import random
+import random
 
 mood_mode_map = {
     'happy': scale.LydianScale,
@@ -127,7 +127,7 @@ Input: a filepath, the mode, the tonic, and the number of measures we want to re
 Description: Given a generated piece, calculate the fitness of each measure, and sort them in order.
 Output: The top n measures
 """
-def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
+def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=4):
     size = 8
     population = []
     generations = 8
@@ -183,25 +183,33 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
                 new_part.append(m)
             new_score.append(new_part)
 
-   
 
-        
         
         chords = []
         skip_next = False
         for i in range(1, len(new_score.parts[0].getElementsByClass('Measure'))+1):
+            print("i = ", i)
             if skip_next:
                 skip_next = False
                 continue
-            mutation = random()
+            mutation = random.random()
             m1 = copy.deepcopy(new_score.parts[0].measure(i))
             m2 = new_score.parts[1].measure(i)
             #print(mutation)
+            # perform inversion 
             if mutation <= 0.33:
                 mutated_melody.append(inversion(m1, m2))
+                print("inversion")
+            # perform multiple-point mutation
+            if mutation >= 0.33 and mutation <= 0.90:
+                mutated = mutate_measure(m1, mood, tonic, mutation_rate=0.5)
+                new_score.append(mutated)
+                print("mutationated")
+            # perform crossover 
             elif mutation <= 0.67 and i <= len(new_score.parts[0].getElementsByClass('Measure')) - 1:
                 mutated_melody.append(crossover(m1, new_score.parts[0].measure(i+1)))
                 skip_next = True
+                print ("crossover")
             else:
                 mutated_melody.append(list(m1.notes))
 
@@ -212,7 +220,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
             chords.append(cMeasure)
             
 
-        
+        print("finished gen")
         final_harmony.append(chords)
         
     mutated_score.append(mutated_melody.makeMeasures())
@@ -224,16 +232,16 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
     mutated_score.metadata.composer = "Eileen Chen, Ezra Jonath, Johanne Antoine"
 
      # DRUMS
-    num_total_measures = len(mutated_score)
+    num_total_measures = size * 4
     drum_seq = drums.generate_sequence(mood, num_measures=num_total_measures)
     drum_part = drums.sequence_to_stream(drum_seq)
 
     drum_part.makeMeasures(inPlace=True)
-    new_score.append(drum_part)
+    mutated_score.append(drum_part)
 
     #time.sleep(10)
     # mutated_score.show('midi')
-    mutated_score.show()
+    mutated_score.show('midi')
 
 
 def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
@@ -254,8 +262,8 @@ def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
     
     #allowed_pitches = [p.name for p in mode_class.getPitches(tonic + '3', tonic + '6')]
     mode_class = mood_mode_map[mood](tonic)
-    allowed_pitches = set(p.name for p in mode_class.getPitches())
-
+    # allowed_pitches = set(p.name for p in mode_class.getPitches())
+    allowed_pitches = [p.name for p in mode_class.getPitches()]
 
     mutated = copy.deepcopy(measure)
 
@@ -289,7 +297,7 @@ if __name__ == "__main__":
         print("Invalid mood, try again.")
         mood = input()
     else:
-        print("\nSelected mood:" + mood +".\n")
+        print("\nSelected mood: " + mood +".\n")
 
 
     final_piece(mood=mood)
