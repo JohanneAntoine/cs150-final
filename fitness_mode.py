@@ -127,7 +127,7 @@ Input: a filepath, the mode, the tonic, and the number of measures we want to re
 Description: Given a generated piece, calculate the fitness of each measure, and sort them in order.
 Output: The top n measures
 """
-def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=4):
+def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2, prob=0.5):
     size = 8
     population = []
     generations = 8
@@ -139,7 +139,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
     for j in range(generations):
         #if not os.path.exists(filepath):
-        generate_markov.create_composition(size)
+        generate_markov.create_composition(size, prob)
         score_stream = converter.parse(filepath)
         parts = score_stream.parts
         
@@ -297,7 +297,13 @@ if __name__ == "__main__":
         print("Invalid mood, try again.")
         mood = input()
     else:
-        print("\nSelected mood: " + mood +".\n")
+        print("\nSelected mood:" + mood +".\n")
+    
+    if mood=='happy':
+        prob = 0.6 
+    elif mood == 'sad':
+        prob=0.3
+    else:
+        prob = 0.8
 
-
-    final_piece(mood=mood)
+    final_piece(mood=mood, prob=prob)
