@@ -25,11 +25,22 @@ GROOVE_RULES = {
 }
 
 # Helper Functions
-
+"""
+get_swing_duration
+Input: a boolean indicating whether the note is the first note in an eighth note pair
+Description: Calculates the duration of the note
+Output: The duration of the note
+"""
 def get_swing_duration(is_first_in_pair):
     base = 0.67 if is_first_in_pair else 0.33
     return base + random.uniform(-0.015, 0.015)  # micro jitter
 
+"""
+get_velocity
+Input: a drum symbol, and the beat in the measure
+Description: Determine tempo based on the params
+Output: The tempo
+"""
 def get_velocity(symbol, position):
     if symbol == 'H':
         return random.randint(60, 70)
@@ -39,6 +50,12 @@ def get_velocity(symbol, position):
         return random.randint(75, 90)
     return 64
 
+"""
+generate_sequence
+Input: the given mood, and the number of measures
+Description: Builds a sequence of groove patterns based on the params
+Output: The sequence of groove patterns
+"""
 def generate_sequence(emotion, num_measures=4):
     grammar = GROOVE_RULES.get(emotion, GROOVE_RULES[emotion])
     sequence = []
@@ -50,7 +67,12 @@ def generate_sequence(emotion, num_measures=4):
     return sequence
 
 
-# Stream Conversion
+"""
+sequence_to_stream
+Input: A given sequence, a boolean based on whether or not there's a swing beat, and whether or not we are exporting for musescore
+Description: Convert a sequence to a music21 stream
+Output: The music21 stream
+"""
 def sequence_to_stream(seq, swing=True, for_score=False):
     part = stream.Part()
     part.id = "Percussion"
@@ -89,7 +111,11 @@ def sequence_to_stream(seq, swing=True, for_score=False):
 
     return part
 
-
+"""
+export_midi
+Input: A music21 part, and filename
+Description: Export the part to a midi file
+"""
 def export_midi(part, filename="swing_groove.mid"):
     mf = midi.translate.streamToMidiFile(part)
     mf.open(filename, 'wb')
@@ -97,6 +123,11 @@ def export_midi(part, filename="swing_groove.mid"):
     mf.close()
     print(f"Midi exported: {filename}")
 
+"""
+export_score
+Input: A music21 part, and filename
+Description: Export the part to a musicxml file
+"""
 def export_score(part, filename="swing_score.xml"):
     # Add metadata so MuseScore opens cleanly
     score = stream.Score()
