@@ -59,10 +59,11 @@ def inversion(melody: stream.Measure, harmony: stream.Measure):
         distance = p - base_pitch.ps 
         new_note = note.Note(base_pitch.ps-distance)
         new_note.quarterLength = n.quarterLength
-        new_measure.append(new_note.transpose('P8'))
-    return new_measure
+        new_note.pitch.ps += 12
+        new_measure.append(new_note)
+    return list(new_measure.notes)
         
-def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0) -> tuple:
+def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0):
     def split_by_beat(m):
         first_half = stream.Measure(number=m.number)
         second_half = stream.Measure(number=m.number)
@@ -86,7 +87,9 @@ def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0
         child2.insert(el.offset, el)
     for el in m1_second:
         child2.insert(el.offset + split_beat, el)
-    return child1, child2
+
+    
+    return list(child1.notes) + list(child2.notes)
 
 
 
@@ -99,17 +102,18 @@ Output: The top n measures
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2):
     size = 8
     population = []
-    generations = 1
+    generations = 8
     mutated_score = stream.Score()
     mutated_melody = stream.Part()
     final_harmony = stream.Part()
-    generate_markov.create_composition(size)
     
-    score_stream = converter.parse(filepath)
-    parts = score_stream.parts
-    population = parts[0].getElementsByClass(stream.Measure)
+    
+
     for j in range(generations):
         #if not os.path.exists(filepath):
+        generate_markov.create_composition(size)
+        score_stream = converter.parse(filepath)
+        parts = score_stream.parts
         
         
         #os.remove(filepath)
@@ -128,7 +132,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
 
             fitness = fitness_function(composite_measure, mood, tonic) + generalFitnessFunction(m1, m2)
-            print(f"Measure {i+1}: Fitness = {fitness}")
+            #print(f"Measure {i+1}: Fitness = {fitness}")
 
             # Store full part-specific measures to rebuild later
             measure_bundle = [copy.deepcopy(part.measure(i + 1)) for part in parts]
@@ -154,18 +158,22 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         
         
         chords = []
+        skip_next = False
         for i in range(1, len(new_score.parts[0].getElementsByClass('Measure'))+1):
+            if skip_next:
+                skip_next = False
+                continue
             mutation = random()
-            m1 = new_score.parts[0].measure(i)
+            m1 = copy.deepcopy(new_score.parts[0].measure(i))
             m2 = new_score.parts[1].measure(i)
             #print(mutation)
             if mutation <= 0.33:
                 mutated_melody.append(inversion(m1, m2))
             elif mutation <= 0.67 and i <= len(new_score.parts[0].getElementsByClass('Measure')) - 1:
                 mutated_melody.append(crossover(m1, new_score.parts[0].measure(i+1)))
-                break
+                skip_next = True
             else:
-                mutated_melody.append(m1)
+                mutated_melody.append(list(m1.notes))
 
         for i in range(1, len(new_score.parts[1].getElementsByClass('Measure'))+1):
             m2 = new_score.parts[1].measure(i)
@@ -177,9 +185,13 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         
         final_harmony.append(chords)
         
-    mutated_score.append(mutated_melody)
+    mutated_score.append(mutated_melody.makeMeasures())
     mutated_score.insert(0, final_harmony)
     mutated_score.makeMeasures()
+
+    mutated_score.insert(0, metadata.Metadata())
+    mutated_score.metadata.title = "Emotional Jazz"
+    mutated_score.metadata.composer = "Eileen Chen, Ezra Jonath, Johanne Antoine"
 
     
 

@@ -125,7 +125,7 @@ def create_composition(measures: int):
     score = stream.Score()
     score.append(tempo.MetronomeMark(number=TEMPO_BPM))
     melody_sequence = generate_sequence(melody_chain, MELODY_NOTE_COUNT)
-    chord_sequence = generate_sequence(chord_chain, CHORD_COUNT)
+    chord_sequence = generate_sequence(chord_chain, measures)
     for i in range(measures):
         sampleMeasure = instr(0.80, 0.25)
         divvy(sampleMeasure, 0.0, 4.0)
