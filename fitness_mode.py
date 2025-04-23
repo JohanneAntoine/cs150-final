@@ -77,6 +77,13 @@ def fitness_function(measure, mood, tonic='C'):
 
     return score
 
+
+"""
+inversion
+Input: a measure containing the melody, and a measure containing the harmony chord
+Description: Taking the root of the harmony, invert the melody based off of the distance from the root
+Output: A list of notes indicating the new melody
+"""
 def inversion(melody: stream.Measure, harmony: stream.Measure):
     c = harmony.notes[0]
     base_pitch = c.root()
@@ -90,7 +97,12 @@ def inversion(melody: stream.Measure, harmony: stream.Measure):
         new_measure.append(new_note)
     return list(new_measure.notes)
         
-
+"""
+crossover
+Input: Two measures, and a float indicating where we will make the split
+Description: Split the measures in half, and then cross them over
+Output: list of notes indicating a new melody
+"""
 def crossover(measure1: stream.Measure, measure2: stream.Measure, split_beat=2.0):
     def split_by_beat(m):
         first_half = stream.Measure(number=m.number)
@@ -130,7 +142,7 @@ Output: The top n measures
 def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', top_n=2, prob=0.5):
     size = 8
     population = []
-    generations = 8
+    generations = 1
     mutated_score = stream.Score()
     mutated_melody = stream.Part()
     final_harmony = stream.Part()
@@ -146,7 +158,7 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
         
         #os.remove(filepath)
         # score_stream.show('midi')
-        # score_stream.show()
+        score_stream.show("text")
         new_population = []
         fitness_measures = []
         for i in range(size):
@@ -241,22 +253,17 @@ def final_piece(filepath='generated_piece.musicxml', mood='happy', tonic='C', to
 
     #time.sleep(10)
     # mutated_score.show('midi')
-    mutated_score.show('midi')
+    mutated_score.show()
 
 
+"""
+mutate_measure
+Input: measure: music21.stream.Measure, mood: 'happy', 'sad', 'angry' (maps to Lydian, Dorian, Phrygian), tonic: tonic root note (default 'C'), mutation_rate: probability of mutation per note/chord tone (0.0 to 1.0)
+Description:  Randomly mutates a measure's notes/chords to conform to the scale for a given mood.
+Output: A mutated copy of the measure.
+"""
 def mutate_measure(measure, mood, tonic='C', mutation_rate=0.3):
-    """
-    Randomly mutates a measure's notes/chords to conform to the scale for a given mood.
     
-    Parameters:
-        measure: music21.stream.Measure
-        mood: 'happy', 'sad', 'angry' (maps to Lydian, Dorian, Phrygian)
-        tonic: tonic root note (default 'C')
-        mutation_rate: probability of mutation per note/chord tone (0.0 to 1.0)
-        
-    Returns:
-        A mutated copy of the measure.
-    """
     if mood not in mood_mode_map:
         raise ValueError(f"Unsupported mood: {mood}")
     
